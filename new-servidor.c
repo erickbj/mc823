@@ -3,8 +3,8 @@
 #include <stdio.h>
 
 #define LISTENQ 10
-#define MAXDATASIZE 100
-#define MAXLINE 20*4096
+#define MAXDATASIZE 10240
+#define MAXLINE 40*4096
 
 int main(int argc, char **argv) {
 	int listenfd, connfd;
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	FILE *log = fopen("connections.log", "w+");
+	FILE *log = fopen("connections.log", "a+");
 
 	for (;;) {
 		// Zera a variavel client
@@ -59,6 +59,9 @@ int main(int argc, char **argv) {
 		// O processo filho toma conta da conexao estabelecida, e realiza
 		// as leituras e execucoes dos comandos.
 		if (child == 0) {
+
+			close(listenfd);
+
 			struct sockaddr_in own_client = client;
 
 			time(&currentTime);
@@ -110,10 +113,13 @@ int main(int argc, char **argv) {
 				currtime->tm_hour, currtime->tm_min, 
 				inet_ntoa(own_client.sin_addr), own_client.sin_port);
 
+			return 0;
 
-			// Fecha a conexao com o cliente
-			close(connfd);
+
 		}
+		// Fecha a conexao do filho
+		close(connfd);
+
 		// O processo pai continua a execucao e fica esperando um novo cliente
 		// se conectar.
 	}

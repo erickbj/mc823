@@ -221,8 +221,8 @@ char *ExecuteSystemCmd(const char *command) {
 		return NULL;
 	}
 
-	char output[5000];
-	char buf[256];
+	char output[10240];
+	char buf[1024];
 
 	output[0] = '\0';
 

@@ -55,7 +55,6 @@ int main(int argc, char **argv) {
 
         printf("Digite um comando: ");
         scanf("%[^\n]s", cmd);
-        printf("Comando é %s\n", cmd);
         setbuf(stdin, NULL);
 
 	// Envia o comando para o servidor
