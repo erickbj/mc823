@@ -96,6 +96,7 @@ int Listen(int listenfd, int backlog) {
  * Aceita uma conexao entrante, mostrando mensagens de erro se for o caso.
  * 
  * @param listenfd Descritor do socket de escuta que aceitara a conexao.
+ * @param client Estrutura de endereco que guardas o endereco do cliente.
  * @return -1 em caso de falha ou connfd (descritor do socket da conexao
  * aceita) em caso de sucesso.
  */
@@ -215,23 +216,31 @@ int PrintLocalAddress(int sockfd, struct sockaddr_in servaddr) {
  * @return the output of command or NULL on error.
  */
 char *ExecuteSystemCmd(const char *command) {
+    // aber um arquivo executando um comando
 	FILE *proc = popen(command, "r");
 	if (proc == NULL) {
 		printf("Invoking command %s failed.", command);
 		return NULL;
 	}
 
+    // buffers de entrada e saida para o arquivo
 	char output[10240];
 	char buf[1024];
 
+    // inicia o buffer com o caracter nulo
 	output[0] = '\0';
 
+    // enquando nao chega ao fim do arquivo, concatena
+    // o conteudo do arquivo no buffer de saida
 	while (!feof(proc)) {
 		if (fgets(buf, 128, proc) != NULL)
 			strcat(output, buf);
 	}
 
+    // termina o buffer com o caracter nulo
 	buf[0] = '\0';
+	
+	// fecha o arquivo
 	pclose(proc);
 
 	return strdup(output);
