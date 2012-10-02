@@ -1,10 +1,23 @@
 #include "funcoes.h"
 #include <time.h>
 #include <stdio.h>
+#include <sys/wait.h>
 
 #define LISTENQ 10
 #define MAXDATASIZE 10240
 #define MAXLINE 40*4096
+
+
+void sig_chld(int signo)
+{
+	pid_t pid;
+	int stat;
+
+	while ( (pid = waitpid(-1, &stat, WNOHANG)) > 0)
+		printf("Filho %d encerrado\n", pid);
+	
+	return;
+}
 
 int main(int argc, char **argv) {
 	int listenfd, connfd;
@@ -13,8 +26,8 @@ int main(int argc, char **argv) {
 	time_t currentTime;
 	struct tm *currtime;
 
-	if (argc != 2) {
-		perror("Numero invalido de argumentos.\nInforme o IP e a porta.");
+	if (argc != 3) {
+		perror("Numero invalido de argumentos.\nInforme a porta e o backlog.");
 		exit(1);
 	}
 
@@ -27,6 +40,9 @@ int main(int argc, char **argv) {
 	// Copia o parametro de entrada porta e converte para o formato correto
 	int port = atoi(argv[1]);
 
+	// Copia o backlog da entrada convertendo para inteiro
+	int backlog = atoi(argv[2]);
+
 	// Cria a estrutura de endereco do servidor
 	servaddr = CreateServerAddress(AF_INET, port);
 
@@ -36,9 +52,12 @@ int main(int argc, char **argv) {
 	}
 
 	// Ouve por conexoes no socket listenfd
-	if (Listen(listenfd, LISTENQ) != 0) {
+	if (Listen(listenfd, backlog) != 0) {
 		exit(1);
 	}
+
+	// Tratamento do SIGCHLD
+	signal (SIGCHLD, sig_chld);
 
 	FILE *log = fopen("connections.log", "a+");
 
@@ -48,7 +67,9 @@ int main(int argc, char **argv) {
 
 		// Aceita a conexao no socket listenfd, e retorna um descritor do socket
 		// aceito podendo realizar operacoes com este socket.
-		if ((connfd = Accept(listenfd, (struct sockaddr *)&client)) == -1) {
+		if ((connfd = Accept(listenfd, (struct sockaddr *)&client)) < 0) {
+			if (errno == EINTR)
+				continue;
 			exit(1);
 		}
 
@@ -117,6 +138,10 @@ int main(int argc, char **argv) {
 
 
 		}
+
+		// Retarda o fechamento da conexão do filho em 5 segundos
+		sleep(5);
+
 		// Fecha a conexao do filho
 		close(connfd);
 
